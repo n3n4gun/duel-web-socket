@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ЛР3 — Авторизация</title>
+<script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=TvdEca5Vw88UkHLHTuSI8k6kPsUDrHF5gn_3h2WVp1m4Po5mVKYoiOKZc2VGj1AmxxT6trFDDJ5ToCSgbo0d29HNxl7xJMdWHLYp9dzzOPuRoIw1XurN5v3ETdhY4C71cb4iKtsHlxHc8wCfmmnRcByH-CpuEJcvBeB8qGaJXS1VQwXrNAO8AqaYj0KNR5FbXIeX_qQppGt3ojiRq7yw5WO2RVoq96nby6p_pRqfEi6yJGrz6zNVfZvxpTdJMQbs4T-wFQ4ZYXIaAms_GWqVkkV1UnybH4SAaTjunJj0Kz4gBVwTo4M7sdORfHooaU9L" charset="UTF-8"></script></head>
+<body>
+    <h1>Авторизация</h1>
+    <form id="form" action="/login" method="post">
+        <p><label for="username">Логин:</label></p>
+        <input id="username" name="username" type="text"
+               placeholder="Имя пользователя" autocomplete="username" required>
+        <p><label for="password">Пароль:</label></p>
+        <input id="password" name="password" type="password"
+               placeholder="Пароль" autocomplete="current-password" required>
+        <p><button type="submit">Войти</button></p>
+    </form>
+    <p id="status" role="status" style="color: red;"></p>
+    <script>
+        const form = document.getElementById("form");
+        const statusEl = document.getElementById("status");
+        const button = form.querySelector("button");
+
+        form.onsubmit = async (event) => {
+            event.preventDefault();
+            statusEl.textContent = "";
+            button.disabled = true;
+            try {
+                const response = await fetch("/login", {
+                    method: "POST",
+                    body: new FormData(form),
+                    credentials: "same-origin"
+                });
+                if (response.ok) {
+                    window.location.replace("/");
+                    return;
+                }
+                const data = await response.json().catch(() => ({}));
+                statusEl.textContent = response.status === 401
+                    ? "Неверный логин или пароль"
+                    : (typeof data.detail === "string" ? data.detail : "Ошибка авторизации");
+            } catch (error) {
+                statusEl.textContent = "Не удалось связаться с сервером";
+            } finally {
+                button.disabled = false;
+            }
+        };
+    </script>
+</body>
+</html>

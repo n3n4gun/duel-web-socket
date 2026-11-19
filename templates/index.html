@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ЛР3 — общий чат</title>
+<body>
+    <h1>Общий чат</h1>
+    <p>Статус: <b id="status">подключение…</b></p>
+    <form id="form">
+      <input id="input" autocomplete="off" placeholder="Сообщение">
+      <button>Отправить</button>
+    </form>
+    <button id="close">Закрыть соединение</button>
+    <ul id="log"></ul>
+
+    <script>
+        // не называйте переменную "status": это встроенное window.status
+        const statusEl = document.getElementById("status");
+        const input = document.getElementById("input");
+        
+        function log(text) {
+          const li = document.createElement("li");
+          li.textContent = text;
+          document.getElementById("log").prepend(li);
+        }
+
+        // 1. подключение
+        const proto = location.protocol === "https:" ? "wss" : "ws";
+        const ws = new WebSocket(`${proto}://${location.host}/ws/chat`);
+
+        // 2. события соединения
+        ws.onopen    = () => statusEl.textContent = "открыто";
+        ws.onmessage = (event) => {
+          let message;
+          try {
+            message = JSON.parse(event.data);
+          } catch (error) {
+            log("Ошибка: сервер прислал некорректный JSON");
+            return;
+          }
+
+          switch (message.type) {
+            case "chat":
+              log("💬 " + message.text);
+              break;
+            case "system":
+              log("ℹ️ " + message.text);
+              break;
+            case "error":
+              log("⚠️ " + message.detail);
+              break;
+            default:
+              log("Неизвестный тип сообщения: " + String(message.type));
+          }
+        };
+        ws.onclose   = (event) => statusEl.textContent = `закрыто (код ${event.code})`;
+
+        // 3. отправка JSON: по кнопке «Отправить» или Enter в поле
+        document.getElementById("form").onsubmit = (e) => {
+          e.preventDefault();                         // не перезагружать страницу
+          const text = input.value.trim();
+          if (!text || ws.readyState !== WebSocket.OPEN) return;
+          ws.send(JSON.stringify({ type: "chat", text: text }));
+          input.value = "";
+        };
+
+        // 4. закрытие соединения
+        document.getElementById("close").onclick = () => ws.close(1000, "пользователь закрыл");
+    </script>
+</body>
+</html>
